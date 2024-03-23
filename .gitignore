@@ -8,6 +8,15 @@
 # testing
 /coverage
 
+# virtual environment
+
+/backend/app/venv
+
+#exposed directory
+
+/exposedirectory
+/backend/app/__pycache__
+
 # production
 /build
 
@@ -21,3 +30,4 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.env
