@@ -3,10 +3,14 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import anthropic
-from fastapi.responses import StreamingResponse
 import subprocess
+from dotenv import load_dotenv
 
-client = anthropic.Anthropic(api_key=os.get("ANTHROPIC_API_KEY"))
+# Load environment variables from .env file
+load_dotenv()
+print(os.getenv("ANTHROPIC_API_KEY"))
+
+client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 app = FastAPI()
 
 # Set up CORS middleware
@@ -45,13 +49,24 @@ async def chat(message: ChatMessage):
     """
 
     command_completion = client.messages.create(
-        model="claude-3-opus-20240229",
-        max_tokens=1024,
-        system="Your task is to generate appropriate 'ls' commands based on the user's prompt.",
+        model="claude-3-sonnet-20240229",
+        max_tokens=1000,
+        temperature=0,
+        system="You are an unix file system expert, generate 'ls' command based on the user's prompt. You output only one unix command no explanation. ",
         messages=[
-            {"role": "user", "content": command_prompt}
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": command_prompt
+                    }
+                ]
+            }
         ]
     )
+    print(f"ls_command:{command_completion.content[0].text}")
+    
     ls_command = command_completion.content[0].text.strip()
 
     # Execute the ls command in the specified directory
@@ -71,21 +86,15 @@ async def chat(message: ChatMessage):
     try:
         # Send the request to the Claude API using the `messages.create()` method
         completion = client.messages.create(
-            model="claude-3-opus-20240229",
+            model="claude-3-sonnet-20240229",
             max_tokens=1024,
             messages=[
                 {"role": "user", "content": prompt}
-            ],
-            stream=True,  # Enable streaming
+            ]
         )
 
-        # Stream the response from Claude
-        def generate_response():
-            for chunk in completion.content[0].text_stream:
-                yield chunk
-
-        # Return the response as a streaming response
-        return StreamingResponse(generate_response(), media_type="text/plain")
+        # Return the response from Claude
+        return completion.content[0].text
 
     except Exception as e:
         # Handle any errors that occur during the API request
